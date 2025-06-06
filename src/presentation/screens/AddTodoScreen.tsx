@@ -1,15 +1,30 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet } from 'react-native';
+import { View, TextInput, Button, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function AddTodoScreen({ route, navigation }: any) {
   const { handleAdd } = route.params;
   const [text, setText] = useState('');
+  const [deadline, setDeadline] = useState<Date | undefined>(undefined);
+  const [showPicker, setShowPicker] = useState(false);
 
   const submit = () => {
-    if (text.trim()) {
-      handleAdd(text);
-      navigation.goBack();
-    }
+  if (text.trim()) {
+    handleAdd({
+      id: Date.now(),
+      text,
+      completed: false,
+      deadline: deadline ? deadline.toISOString().split('T')[0] : undefined,
+    });
+    navigation.goBack();
+  }
+};
+
+  const openDatePicker = () => setShowPicker(true);
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowPicker(false);
+    if (selectedDate) {setDeadline(selectedDate);}
   };
 
   return (
@@ -25,6 +40,19 @@ export default function AddTodoScreen({ route, navigation }: any) {
           returnKeyType="done"
           onSubmitEditing={submit}
         />
+        <TouchableOpacity onPress={openDatePicker} style={styles.dateBtn}>
+          <Text style={styles.dateBtnText}>
+            {deadline ? `Fecha límite: ${deadline.toLocaleDateString()}` : 'Seleccionar fecha límite'}
+          </Text>
+        </TouchableOpacity>
+        {showPicker && (
+          <DateTimePicker
+            value={deadline || new Date()}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={onDateChange}
+          />
+        )}
         <View style={styles.buttonContainer}>
           <Button
             title="Agregar"
@@ -67,6 +95,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     backgroundColor: '#f9f9f9',
     color: '#222',
+  },
+  dateBtn: {
+    backgroundColor: '#e3eafc',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  dateBtnText: {
+    color: '#1976d2',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   buttonContainer: {
     borderRadius: 10,

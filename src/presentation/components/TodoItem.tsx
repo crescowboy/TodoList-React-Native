@@ -16,6 +16,16 @@ export default function TodoItem({ todo, onToggle, onDelete, onEdit }: Props) {
         <Text style={[styles.text, todo.completed && styles.completed]}>
           {todo.text}
         </Text>
+        {todo.deadline && (
+          <Text
+            style={[
+              styles.deadlineText,
+              new Date(todo.deadline) < new Date() && !todo.completed && styles.deadlineExpired,
+            ]}
+          >
+            ⏰ {todo.deadline}
+          </Text>
+        )}
       </TouchableOpacity>
       <View style={styles.actions}>
         <TouchableOpacity
@@ -72,6 +82,11 @@ const styles = StyleSheet.create({
     color: '#aaa',
     fontStyle: 'italic',
   },
+  deadlineText: {
+    color: '#1976d2',
+    fontSize: 14,
+    marginTop: 2,
+  },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -84,6 +99,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  deadlineExpired: {
+  color: '#d32f2f',
+  fontWeight: 'bold',
+},
   toggleButton: {
     backgroundColor: '#e3f2fd',
   },

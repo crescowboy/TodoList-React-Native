@@ -16,9 +16,8 @@ export default function HomeScreen({ navigation }: any) {
     TodoStorage.getTodos().then(setTodos);
   }, []);
 
-  const handleAdd = (text: string) => {
-    const newTodo: Todo = { id: Date.now(), text, completed: false };
-    const updated = addTodo(todos, newTodo);
+  const handleAdd = (todo: Todo) => {
+    const updated = addTodo(todos, todo);
     setTodos(updated);
     TodoStorage.saveTodos(updated);
   };
@@ -70,10 +69,19 @@ export default function HomeScreen({ navigation }: any) {
   };
 
   const getFilteredTodos = () => {
-    if (filter === 'completed') {return todos.filter(t => t.completed);}
-    if (filter === 'pending') {return todos.filter(t => !t.completed);}
-    return todos;
-  };
+  let filtered = todos;
+  if (filter === 'completed') {filtered = todos.filter(t => t.completed);}
+  if (filter === 'pending') {filtered = todos.filter(t => !t.completed);}
+
+  return filtered.slice().sort((a, b) => {
+    if (a.deadline && b.deadline) {
+      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+    }
+    if (a.deadline) {return -1;}
+    if (b.deadline) {return 1;}
+    return 0;
+  });
+};
 
   return (
     <View style={styles.container}>
