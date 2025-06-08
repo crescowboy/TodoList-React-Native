@@ -86,7 +86,7 @@ export default function HomeScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>📝 Mis Tareas</Text>
+        <Text style={styles.headerTitle}>📝 Mis Tareas!</Text>
       </View>
 
       <TodoFilterBar filter={filter} setFilter={setFilter} />
