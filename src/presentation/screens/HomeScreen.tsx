@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet, Text, TouchableOpacity, TextInput, Keyboard } from 'react-native';
+import { View, FlatList, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import TodoItem from '../components/TodoItem';
 import { Todo } from '../../core/entities/Todo';
 import { TodoStorage } from '../../infrastructure/storage/TodoStorage';
-import { addTodo, deleteTodo, editTodo, toggleTodo } from '../../core/usecases/';
+import { addTodo, deleteTodo, toggleTodo } from '../../core/usecases/';
 import TodoFilterBar from '../components/TodoFilterBar';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export default function HomeScreen({ navigation }: any) {
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [input, setInput] = useState('');
   const [filter, setFilter] = useState<'all' | 'completed' | 'pending'>('all');
 
   useEffect(() => {
@@ -32,61 +31,40 @@ export default function HomeScreen({ navigation }: any) {
     const updated = deleteTodo(todos, id);
     setTodos(updated);
     TodoStorage.saveTodos(updated);
-    if (editingId === id) {
-      setEditingId(null);
-      setInput('');
-    }
   };
 
-  const handleStartEdit = (todo: Todo) => {
-    setEditingId(todo.id);
-    setInput(todo.text);
-  };
-
-  const handleEditSave = () => {
-    if (editingId !== null && input.trim()) {
-      const updated = editTodo(todos, editingId, input.trim());
-      setTodos(updated);
-      TodoStorage.saveTodos(updated);
-      setEditingId(null);
-      setInput('');
-      Keyboard.dismiss();
-    }
-  };
-
-  const handleEditCancel = () => {
-    setEditingId(null);
-    setInput('');
-    Keyboard.dismiss();
+  const handleUpdate = (updatedTodo: Todo) => {
+    const updated = todos.map(t => t.id === updatedTodo.id ? updatedTodo : t);
+    setTodos(updated);
+    TodoStorage.saveTodos(updated);
   };
 
   const handleFabPress = () => {
-    if (editingId !== null) {
-      handleEditSave();
-    } else {
-      navigation.navigate('AddTodo', { handleAdd });
-    }
+    navigation.navigate('AddTodo', { handleAdd });
   };
 
   const getFilteredTodos = () => {
-  let filtered = todos;
-  if (filter === 'completed') {filtered = todos.filter(t => t.completed);}
-  if (filter === 'pending') {filtered = todos.filter(t => !t.completed);}
+    let filtered = todos;
+    if (filter === 'completed') { filtered = todos.filter(t => t.completed); }
+    if (filter === 'pending') { filtered = todos.filter(t => !t.completed); }
 
-  return filtered.slice().sort((a, b) => {
-    if (a.deadline && b.deadline) {
-      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-    }
-    if (a.deadline) {return -1;}
-    if (b.deadline) {return 1;}
-    return 0;
-  });
-};
+    return filtered.slice().sort((a, b) => {
+      if (a.deadline && b.deadline) {
+        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+      }
+      if (a.deadline) { return -1; }
+      if (b.deadline) { return 1; }
+      return 0;
+    });
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>📝 Mis Tareas!</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <MaterialIcons name="checklist" size={28} color="#fff" style={{ marginRight: 8 }} />
+          <Text style={styles.headerTitle}>Mis Tareas!</Text>
+        </View>
       </View>
 
       <TodoFilterBar filter={filter} setFilter={setFilter} />
@@ -99,42 +77,29 @@ export default function HomeScreen({ navigation }: any) {
             todo={item}
             onToggle={handleToggle}
             onDelete={handleDelete}
-            onEdit={handleStartEdit}
+            onEdit={(todo) =>
+              navigation.navigate('AddTodo', {
+                todoToEdit: todo,
+                handleUpdate,
+              })
+            }
           />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>¡No tienes tareas aún!</Text>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>¡No tienes tareas aún!</Text>
+          </View>
         }
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
       />
 
-      {editingId !== null && (
-        <View style={styles.editBar}>
-          <TextInput
-            style={styles.editInput}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Editar tarea..."
-            placeholderTextColor="#888"
-            autoFocus
-            onSubmitEditing={handleEditSave}
-          />
-          <TouchableOpacity style={styles.saveBtn} onPress={handleEditSave} disabled={!input.trim()}>
-            <Text style={styles.saveBtnText}>✓</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelBtn} onPress={handleEditCancel}>
-            <Text style={styles.cancelBtnText}>✕</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
       <TouchableOpacity
-        style={[styles.fab, editingId !== null && styles.fabEdit]}
+        style={styles.fab}
         onPress={handleFabPress}
         activeOpacity={0.8}
       >
-        <Text style={styles.fabText}>{editingId !== null ? '✓' : '＋'}</Text>
+        <Text style={styles.fabText}>＋ Agregar</Text>
       </TouchableOpacity>
     </View>
   );
@@ -187,25 +152,27 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    right: 24,
-    bottom: 32,
-    backgroundColor: '#1976d2',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    right: 20,
+    bottom: 30,
+    backgroundColor: '#2196F3',
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    elevation: 5,
   },
   fabText: {
     color: '#fff',
-    fontSize: 36,
+    fontSize: 15,
     fontWeight: 'bold',
-    marginBottom: 2,
+    letterSpacing: 1,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
   },
   emptyText: {
     textAlign: 'center',
